@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "cognitoConfig": {
+    "identityPoolName": "sbm_identitypool_95ac7177",
+    "allowUnauthenticatedIdentities": true,
+    "authSelections": "identityPoolOnly",
+    "resourceName": "sbm",
+    "sharedId": "95ac7177",
+    "serviceName": "Cognito",
+    "useDefault": "manual"
+  }
+}

@@ -1,0 +1,21 @@
+{
+    "appName": "sbm",
+    "roleName": "pinpointLambdaRole959a9b7c",
+    "cloudformationPolicyName": "cloudformationPolicy959a9b7c",
+    "cloudWatchPolicyName": "cloudWatchPolicy959a9b7c",
+    "pinpointPolicyName": "pinpointPolicy959a9b7c",
+    "authPolicyName": "pinpoint_amplify_959a9b7c",
+    "unauthPolicyName": "pinpoint_amplify_959a9b7c",
+    "authRoleName": {
+        "Ref": "AuthRoleName"
+    },
+    "unauthRoleName": {
+        "Ref": "UnauthRoleName"
+    },
+    "authRoleArn": {
+        "Fn::GetAtt": [
+            "AuthRole",
+            "Arn"
+        ]
+    }
+}

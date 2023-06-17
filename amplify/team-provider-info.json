@@ -1,0 +1,39 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-sbm-dev-61657-authRole",
+      "UnauthRoleArn": "arn:aws:iam::321697507855:role/amplify-sbm-dev-61657-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::321697507855:role/amplify-sbm-dev-61657-authRole",
+      "Region": "ap-northeast-2",
+      "DeploymentBucketName": "amplify-sbm-dev-61657-deployment",
+      "UnauthRoleName": "amplify-sbm-dev-61657-unauthRole",
+      "StackName": "amplify-sbm-dev-61657",
+      "StackId": "arn:aws:cloudformation:ap-northeast-2:321697507855:stack/amplify-sbm-dev-61657/215e4e00-0c8b-11ee-a9bf-0a8b03d974b0",
+      "AmplifyAppId": "d31c0yuhezine0"
+    }
+  },
+  "sbm": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-sbm-sbm-62157-authRole",
+      "UnauthRoleArn": "arn:aws:iam::321697507855:role/amplify-sbm-sbm-62157-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::321697507855:role/amplify-sbm-sbm-62157-authRole",
+      "Region": "ap-northeast-2",
+      "DeploymentBucketName": "amplify-sbm-sbm-62157-deployment",
+      "UnauthRoleName": "amplify-sbm-sbm-62157-unauthRole",
+      "StackName": "amplify-sbm-sbm-62157",
+      "StackId": "arn:aws:cloudformation:ap-northeast-2:321697507855:stack/amplify-sbm-sbm-62157/d3d8eae0-0c8b-11ee-9b40-0a87a4aa9b24",
+      "AmplifyAppId": "d31c0yuhezine0"
+    },
+    "categories": {
+      "api": {
+        "sbm": {}
+      },
+      "auth": {
+        "sbm": {}
+      },
+      "analytics": {
+        "sbm": {}
+      }
+    }
+  }
+}
