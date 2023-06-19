@@ -11,9 +11,12 @@ import {Modal} from 'react-native';
 import {TouchableWithoutFeedback} from 'react-native';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
-import {API, graphqlOperation} from 'aws-amplify';
+import {API, graphqlOperation, Storage} from 'aws-amplify';
 import {createSupervisor} from '../graphql/mutations';
 import {createManager} from '../graphql/mutations';
+
+import AutoHeightImage from 'react-native-auto-height-image';
+import {useWindowDimensions} from 'react-native';
 
 const initialState = {
   name: '',
@@ -21,28 +24,25 @@ const initialState = {
   place: '',
   problem: '',
   solved: '',
+  probimage: '',
+  solvedimage: '',
 };
 
 /* 여기는 스타일 컴포넌트*/
 
 const ModalTest = styled.View`
   flex: 1;
-  background-color: beige;
-  justify-content: center;
-  align-items: center;
 `;
+
+const ModalTest2 = styled.ScrollView``;
 
 const PlaceModal = styled.ScrollView`
   flex: 1;
-  background-color: aqua;
 `;
 
 const Texts = styled.Text``;
 
-const Test = styled.View`
-  justify-content: center;
-  align-items: center;
-`;
+const Test = styled.View``;
 
 const CloseButton = styled.Button``;
 const CloseButton2 = styled.Button``;
@@ -98,7 +98,7 @@ const DateContainer = styled.View`
 const SubmitContainer = styled.View`
   justify-content: center;
   align-items: center;
-  margin-top: 30px;
+  margin-top: 20px;
 `;
 
 const UploadIconConatainer = styled.View``;
@@ -127,8 +127,8 @@ const Line = styled.View`
 const Submit = styled.TouchableOpacity`
   justify-content: center;
   align-items: center;
-  width: 20%;
-  height: 40px;
+  width: 25%;
+  height: 50px;
   border: 1px solid black;
   border-radius: 20px;
   background-color: #e4ae3d;
@@ -187,10 +187,7 @@ const ProbImage = styled.Image`
   height: 100px;
 `;
 
-const SolvedImage = styled.Image`
-  width: 100px;
-  height: 100px;
-`;
+const SolvedImage = styled.Image``;
 
 const Text = styled.Text`
   font-size: 18px;
@@ -225,8 +222,13 @@ const ImageView = styled.ScrollView`
 /* 여기부터 렌더링 파트*/
 
 const Inspection = ({navigation, route}) => {
+  const {width} = useWindowDimensions();
+
   const [name, setName] = useState(false);
   const [place, setPlace] = useState(false);
+
+  const [fetchedProbImage, setFetchedProbImage] = useState([]);
+  const [fetchSolvedImage, setFetchSolvedImage] = useState([]);
 
   const [keyword, setKeyWord] = useState('');
 
@@ -237,8 +239,8 @@ const Inspection = ({navigation, route}) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [placeModalVisivle, setPlaceModalVisible] = useState(false);
 
-  const [probResponse, setProbResponse] = useState('없음');
-  const [solvedResponse, setSolvedResponse] = useState('없음');
+  const [probResponse, setProbResponse] = useState('');
+  const [solvedResponse, setSolvedResponse] = useState('');
   const [imageState, setImageState] = useState(false);
 
   const [selectedPlace, setSelectedPlace] = useState(null);
@@ -288,13 +290,11 @@ const Inspection = ({navigation, route}) => {
     launchImageLibrary(
       {
         mediaType: 'photo',
-        maxWidth: 512,
-        maxHeight: 512,
         includeBase64: Platform.OS === 'android',
         selectionLimit: 0,
       },
       res => {
-        if (res.didCancel) return;
+        if (res.didCancel) return null;
         setProbResponse(res);
       },
     );
@@ -324,13 +324,12 @@ const Inspection = ({navigation, route}) => {
     launchImageLibrary(
       {
         mediaType: 'photo',
-        maxWidth: 512,
-        maxHeight: 512,
         includeBase64: Platform.OS === 'android',
         selectionLimit: 0,
       },
       res => {
-        if (res.didCancel) return;
+        if (res.didCancel) return null;
+
         setSolvedResponse(res);
       },
     );
@@ -349,9 +348,7 @@ const Inspection = ({navigation, route}) => {
   };
 
   const closeButton = () => {
-    return setModalVisible(current => {
-      return !current;
-    });
+    return setModalVisible(!modalVisible);
   };
 
   const closeButton2 = () => {
@@ -382,6 +379,30 @@ const Inspection = ({navigation, route}) => {
     return navigation.navigate('Home');
   };
 
+  const fetchResourceFromURI = async (uri, state) => {
+    if (state === 'prob') {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return blob;
+    } else {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return blob;
+    }
+  };
+
+  const result = async (uri, state) => {
+    const img = await fetchResourceFromURI(uri, state);
+
+    await Storage.put(uri, img, {
+      level: 'public',
+      contentType: img.type,
+      progressCallback(progress) {
+        console.log(`Uploaded: ${progress.loaded}/${progress.total}`);
+      },
+    });
+  };
+
   const BackPage = () => {
     if (state === false) {
       setState(current => {
@@ -400,6 +421,9 @@ const Inspection = ({navigation, route}) => {
     return navigation.navigate('Test');
   };
 
+  useEffect(() => {
+    console.log(route.params);
+  }, []);
   return (
     <>
       {state ? (
@@ -515,11 +539,12 @@ const Inspection = ({navigation, route}) => {
                     onPress={() => {
                       return clickedButton('prob');
                     }}>
-                    {probResponse === '없음' ? null : (
+                    {probResponse.length === 0 ? null : (
                       <ImageView>
                         {probResponse.assets.map(images => {
+                          const prob = probResponse.assets;
                           return (
-                            <FileName key={images.id}>
+                            <FileName key={images.index}>
                               {images.fileName}
                             </FileName>
                           );
@@ -551,9 +576,11 @@ const Inspection = ({navigation, route}) => {
                     onPress={() => {
                       return clickedButton('solved');
                     }}>
-                    {solvedResponse === '없음' ? null : (
+                    {solvedResponse.length === 0 ? null : (
                       <ImageView>
                         {solvedResponse.assets.map(images => {
+                          const solved = solvedResponse.assets;
+
                           return (
                             <FileName key={images.fileName}>
                               {images.fileName}
@@ -569,84 +596,170 @@ const Inspection = ({navigation, route}) => {
                 </UploadImage>
               </UploadIconConatainer>
               <SubmitContainer>
-                <Submit>
-                  <SubmitText
-                    onPress={async () => {
-                      if (route.params === 'Stay') {
-                        try {
-                          if (!formState.problem || !formState.solved)
-                            return null;
-                          const todo = {...formState};
+                <Submit
+                  onPress={async () => {
+                    if (route.params === 'Stay') {
+                      console.log(route.params);
+                      try {
+                        if (probResponse.length !== 0) {
+                          probResponse.assets.map(item => {
+                            result(item.uri, 'prob');
+                          });
+                        }
+
+                        if (solvedResponse.length !== 0) {
+                          solvedResponse.assets.map(item => {
+                            result(item.uri, 'solved');
+                          });
+                        }
+
+                        if (probResponse.length !== 0) {
+                          const prob = JSON.stringify(probResponse.assets);
+
+                          const todo = {
+                            ...formState,
+                            probimage: prob,
+                            solvedimage: '',
+                          };
+
                           setTodos([...todos, todo]);
-                          setFormState(initialState);
-                          console.log(todo);
                           await API.graphql(
                             graphqlOperation(createManager, {input: todo}),
                           );
+                        } else if (solvedResponse.length !== 0) {
+                          const solved = JSON.stringify(solvedResponse.assets);
+                          const todo = {
+                            ...formState,
+                            probimage: '',
+                            solvedimage: solved,
+                          };
 
-                          return checkContents();
-                        } catch (err) {
-                          console.log('error creating todo:', err);
-                        }
-                      } else
-                        try {
-                          if (!formState.problem || !formState.solved)
-                            return null;
-
-                          const todo = {...formState};
                           setTodos([...todos, todo]);
-                          setFormState(initialState);
-                          console.log(todo);
+                          await API.graphql(
+                            graphqlOperation(createManager, {input: todo}),
+                          );
+                        } else {
+                          const todo = {
+                            ...formState,
+                            probimage: '',
+                            solvedimage: '',
+                          };
+
+                          setTodos([...todos, todo]);
+
+                          await API.graphql(
+                            graphqlOperation(createManager, {input: todo}),
+                          );
+                        }
+
+                        // setFormState(initialState);
+                        return checkContents();
+                      } catch (err) {
+                        console.log('error creating todo:', err);
+                      }
+                    } else
+                      try {
+                        if (!formState.problem || !formState.solved)
+                          return null;
+                        if (probResponse.length !== 0) {
+                          probResponse.assets.map(item => {
+                            result(item.uri, 'prob');
+                          });
+                        }
+
+                        if (solvedResponse.length !== 0) {
+                          solvedResponse.assets.map(item => {
+                            result(item.uri, 'solved');
+                          });
+                        }
+
+                        if (probResponse.length !== 0) {
+                          const prob = JSON.stringify(probResponse.assets);
+
+                          const todo = {
+                            ...formState,
+                            probimage: prob,
+                            solvedimage: '',
+                          };
+
+                          setTodos([...todos, todo]);
+
                           await API.graphql(
                             graphqlOperation(createSupervisor, {input: todo}),
                           );
+                        } else if (solvedResponse.length !== 0) {
+                          const solved = JSON.stringify(solvedResponse.assets);
+                          const todo = {
+                            ...formState,
+                            probimage: '',
+                            solvedimage: solved,
+                          };
 
-                          return checkContents();
-                        } catch (err) {
-                          console.log('error creating todo:', err);
+                          setTodos([...todos, todo]);
+
+                          await API.graphql(
+                            graphqlOperation(createSupervisor, {input: todo}),
+                          );
+                        } else {
+                          const todo = {
+                            ...formState,
+                            probimage: '',
+                            solvedimage: '',
+                          };
+
+                          setTodos([...todos, todo]);
+
+                          await API.graphql(
+                            graphqlOperation(createSupervisor, {input: todo}),
+                          );
                         }
-                    }}>
-                    확인
-                  </SubmitText>
+
+                        // setFormState(initialState);
+
+                        return checkContents();
+                      } catch (err) {
+                        console.log('error creating todo:', err);
+                      }
+                  }}>
+                  <SubmitText>확인</SubmitText>
                 </Submit>
               </SubmitContainer>
             </KeyboardAwareScrollView>
             <Modal
               animationType="slide"
-              transparent={true}
               visible={modalVisible}
-              // presentationStyle="overFullScreen"
+              presentationStyle="pageSheet"
               onRequestClose={() => {
-                Alert.alert('Modal has been closed.');
-                setModalVisible(!modalVisible);
+                closeButton();
               }}>
               <ModalTest>
-                {imageState == true ? (
-                  probResponse === '없음' ? null : (
-                    <Test>
-                      {probResponse.assets.map(images => {
+                <ModalTest2>
+                  {imageState == true
+                    ? probResponse === '없음'
+                      ? null
+                      : probResponse.assets.map(images => {
+                          return (
+                            <Test key={images.fileName}>
+                              <AutoHeightImage
+                                width={width}
+                                source={{uri: images.uri}}
+                              />
+                            </Test>
+                          );
+                        })
+                    : solvedResponse.length === 0
+                    ? null
+                    : solvedResponse.assets.map(images => {
                         return (
-                          <ProbImage
-                            source={{uri: images.uri}}
-                            key={images.fileName}
-                          />
+                          <Test key={images.fileName}>
+                            <AutoHeightImage
+                              width={width}
+                              source={{uri: images.uri}}
+                            />
+                          </Test>
                         );
                       })}
-                    </Test>
-                  )
-                ) : solvedResponse === '없음' ? null : (
-                  <Test>
-                    {solvedResponse.assets.map(images => {
-                      return (
-                        <SolvedImage
-                          source={{uri: images.uri}}
-                          key={images.fileName}
-                        />
-                      );
-                    })}
-                  </Test>
-                )}
-                <CloseButton title="닫기" onPress={closeButton}></CloseButton>
+                </ModalTest2>
               </ModalTest>
             </Modal>
           </Container>
@@ -658,8 +771,7 @@ const Inspection = ({navigation, route}) => {
         visible={placeModalVisivle}
         presentationStyle="formSheet"
         onRequestClose={() => {
-          Alert.alert('Modal has been closed.');
-          setPlaceModalVisible(!placeModalVisivle);
+          closeButton2();
         }}>
         <PlaceModal>
           {placeData.map((item, index) => {
@@ -674,7 +786,6 @@ const Inspection = ({navigation, route}) => {
               </MainContainer>
             );
           })}
-          <CloseButton2 title="닫기" onPress={closeButton2}></CloseButton2>
         </PlaceModal>
       </Modal>
     </>

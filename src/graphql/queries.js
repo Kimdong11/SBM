@@ -10,6 +10,8 @@ export const getSupervisor = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename
@@ -30,6 +32,8 @@ export const listSupervisors = /* GraphQL */ `
         place
         problem
         solved
+        probimage
+        solvedimage
         createdAt
         updatedAt
         __typename
@@ -48,6 +52,8 @@ export const getManager = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename
@@ -68,6 +74,8 @@ export const listManagers = /* GraphQL */ `
         place
         problem
         solved
+        probimage
+        solvedimage
         createdAt
         updatedAt
         __typename

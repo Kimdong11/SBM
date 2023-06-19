@@ -13,6 +13,8 @@ export const createSupervisor = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename
@@ -31,6 +33,8 @@ export const updateSupervisor = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename
@@ -49,6 +53,8 @@ export const deleteSupervisor = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename
@@ -67,6 +73,8 @@ export const createManager = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename
@@ -85,6 +93,8 @@ export const updateManager = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename
@@ -103,6 +113,8 @@ export const deleteManager = /* GraphQL */ `
       place
       problem
       solved
+      probimage
+      solvedimage
       createdAt
       updatedAt
       __typename

@@ -1,15 +1,21 @@
 import React, {useEffect, useState} from 'react';
-import {API, Amplify, graphqlOperation, Auth} from 'aws-amplify';
+import {API, Amplify, graphqlOperation, Auth, Storage} from 'aws-amplify';
 import {listSupervisors} from '../graphql/queries';
 import {listManagers} from '../graphql/queries';
 import styled from 'styled-components';
 import {Alert, Modal} from 'react-native';
 import DatePicker from 'react-native-date-picker';
+import {Image} from 'react-native';
+import AutoHeightImage from 'react-native-auto-height-image';
+import {useWindowDimensions} from 'react-native';
 
 import awsmobile from '../aws-exports';
 
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faArrowLeft, faHome} from '@fortawesome/free-solid-svg-icons';
+
+const sbmUri =
+  'https://sbm99ddee2e11634e04a84bbed0bb697c34164633-sbmdev.s3.ap-northeast-2.amazonaws.com/public/';
 
 const IconContainer = styled.View`
   flex-direction: row;
@@ -47,6 +53,11 @@ const ModalDataContainer = styled.View``;
 const Container = styled.View`
   flex: 1;
 `;
+const ImageModalContainer = styled.View`
+  flex: 1;
+`;
+
+const ImageViewContainer = styled.ScrollView``;
 
 const PlaceMainContainer = styled.View`
   justify-content: center;
@@ -262,7 +273,16 @@ const CloseButtonContainer = styled.View`
 
 const ImageButton = styled.Button``;
 
+const ImageContainer = styled.View``;
+
+// const Image = styled.Image`
+//   width: 66px;
+//   height: 66px;
+// `;
+
 const Search = ({navigation, route}) => {
+  const {width} = useWindowDimensions();
+
   const [state, setState] = useState(true);
   const [datas, setDatas] = useState(null);
   const [selectedData, setSelctedData] = useState(null);
@@ -271,8 +291,15 @@ const Search = ({navigation, route}) => {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
+  const [probImageData, setProbImageData] = useState([]);
+  const [solvedImageData, setSolvedImageData] = useState([]);
+  const [getProbImage, setGetProbImage] = useState([]);
+  const [getSolvedImage, setGetSolvedImage] = useState([]);
+
   const [placeModalVisivle, setPlaceModalVisible] = useState(false);
   const [dataModalVisible, setDataModalVisible] = useState(false);
+  const [probImageModalVisible, setProbImageModalVisible] = useState(false);
+  const [solvedImageModalVisible, setSolvedImageModalVisible] = useState(false);
 
   const [selectedPlaces, setSelectedPlaces] = useState(null);
   const [placeDatas, setPlaceDatas] = useState([
@@ -302,6 +329,13 @@ const Search = ({navigation, route}) => {
           }),
         );
         const datas = todoData.data.listManagers.items;
+        if (datas[0].probimage !== '') {
+          const prob = JSON.parse(datas[0].probimage);
+          setProbImageData(prob);
+        } else if (datas[0].solvedimage !== '') {
+          const solved = JSON.parse(datas[0].solvedimage);
+          setSolvedImageData(solved);
+        }
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -315,6 +349,13 @@ const Search = ({navigation, route}) => {
           }),
         );
         const datas = todoData.data.listSupervisors.items;
+        if (datas[0].probimage !== '') {
+          const prob = JSON.parse(datas[0].probimage);
+          setProbImageData(prob);
+        } else if (datas[0].solvedimage !== '') {
+          const solved = JSON.parse(datas[0].solvedimage);
+          setSolvedImageData(solved);
+        }
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -332,6 +373,8 @@ const Search = ({navigation, route}) => {
           }),
         );
         const datas = todoData.data.listManagers.items;
+        const prob = JSON.parse(datas[0].probimage);
+        const solved = JSON.parse(datas[0].solvedimage);
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -345,6 +388,13 @@ const Search = ({navigation, route}) => {
           }),
         );
         const datas = todoData.data.listSupervisors.items;
+        if (datas[0].probimage !== '') {
+          const prob = JSON.parse(datas[0].probimage);
+          setProbImageData(prob);
+        } else if (datas[0].solvedimage !== '') {
+          const solved = JSON.parse(datas[0].solvedimage);
+          setSolvedImageData(solved);
+        }
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -362,6 +412,13 @@ const Search = ({navigation, route}) => {
           }),
         );
         const datas = todoData.data.listManagers.items;
+        if (datas[0].probimage !== '') {
+          const prob = JSON.parse(datas[0].probimage);
+          setProbImageData(prob);
+        } else if (datas[0].solvedimage !== '') {
+          const solved = JSON.parse(datas[0].solvedimage);
+          setSolvedImageData(solved);
+        }
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -375,12 +432,24 @@ const Search = ({navigation, route}) => {
           }),
         );
         const datas = todoData.data.listSupervisors.items;
+        if (datas[0].probimage !== '') {
+          const prob = JSON.parse(datas[0].probimage);
+          setProbImageData(prob);
+        } else if (datas[0].solvedimage !== '') {
+          const solved = JSON.parse(datas[0].solvedimage);
+          setSolvedImageData(solved);
+        }
+
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
         console.log(err);
       }
     }
+  };
+
+  const HomePage = () => {
+    return navigation.navigate('Home');
   };
 
   const clickedPlace = a => {
@@ -397,6 +466,14 @@ const Search = ({navigation, route}) => {
   const closeButton2 = () => {
     return setPlaceModalVisible(!placeModalVisivle);
   };
+
+  // const getImage = async () => {
+  //   probImageData.map(async uri => {
+  //     const image = await Storage.get(uri);
+  //     return setGetProbImage([...getProbImage, image]);
+  //   });
+  //   console.log(probImageData[0].uri);
+  // };
 
   return (
     <>
@@ -455,18 +532,14 @@ const Search = ({navigation, route}) => {
             <Pressable
               onPress={() => {
                 if (selectedDate !== null && selectedPlaces !== null) {
-                  console.log('날짜 장소 데이터');
                   return searchDataDatePlace(selectedDate, selectedPlaces);
                 }
 
                 if (selectedPlaces !== null) {
-                  console.log('장소');
                   return searchDataPlace(selectedPlaces);
                 }
 
                 if (selectedDate !== null) {
-                  console.log('날짜');
-                  console.log(typeof selectedDate);
                   return searchDataDate(selectedDate);
                 }
               }}>
@@ -524,9 +597,7 @@ const Search = ({navigation, route}) => {
                 </MainContainer>
               );
             })}
-            <CloseButtonContainer>
-              <CloseButton2 title="닫기" onPress={closeButton2}></CloseButton2>
-            </CloseButtonContainer>
+            <CloseButtonContainer></CloseButtonContainer>
           </PlaceMainContainer>
         </PlaceModal>
       </Modal>
@@ -587,7 +658,11 @@ const Search = ({navigation, route}) => {
                 <ImageButtonContainer>
                   <ImageButton
                     title="문제 이미지 보기"
-                    color="green"></ImageButton>
+                    color="green"
+                    onPress={() => {
+                      setDataModalVisible(!dataModalVisible);
+                      setProbImageModalVisible(!probImageModalVisible);
+                    }}></ImageButton>
                 </ImageButtonContainer>
               </ContentsContainer>
               <SolvedTitle>해결</SolvedTitle>
@@ -598,15 +673,67 @@ const Search = ({navigation, route}) => {
                 <ImageButtonContainer>
                   <ImageButton
                     title="해결 이미지 보기"
-                    color="green"></ImageButton>
+                    color="green"
+                    onPress={() => {
+                      setDataModalVisible(!dataModalVisible);
+                      setSolvedImageModalVisible(!solvedImageModalVisible);
+                    }}></ImageButton>
                 </ImageButtonContainer>
               </ContentsContainer>
             </ModalDataContainer>
-            <CloseButtonContainer>
-              <CloseButton2 title="닫기" onPress={closeButton}></CloseButton2>
-            </CloseButtonContainer>
+            <CloseButtonContainer></CloseButtonContainer>
           </ModalMainContainer>
         )}
+      </Modal>
+      <Modal
+        animationType="fade"
+        //transparent={true}
+        visible={probImageModalVisible}
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          //   Alert.alert('Modal has been closed.');
+          setDataModalVisible(!dataModalVisible);
+          setProbImageModalVisible(!probImageModalVisible);
+        }}>
+        <ImageModalContainer>
+          <ImageViewContainer>
+            {probImageData.map(image => {
+              return (
+                <ImageContainer key={image.fileName}>
+                  <AutoHeightImage
+                    width={width}
+                    source={{uri: `${sbmUri}${image.uri}`}}
+                  />
+                </ImageContainer>
+              );
+            })}
+          </ImageViewContainer>
+        </ImageModalContainer>
+      </Modal>
+      <Modal
+        animationType="none"
+        //transparent={true}
+        visible={solvedImageModalVisible}
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          //   Alert.alert('Modal has been closed.');
+          setDataModalVisible(!dataModalVisible);
+          setSolvedImageModalVisible(!solvedImageModalVisible);
+        }}>
+        <ImageModalContainer>
+          <ImageViewContainer>
+            {solvedImageData.map(image => {
+              return (
+                <ImageContainer key={image.fileName}>
+                  <AutoHeightImage
+                    width={width}
+                    source={{uri: `${sbmUri}${image.uri}`}}
+                  />
+                </ImageContainer>
+              );
+            })}
+          </ImageViewContainer>
+        </ImageModalContainer>
       </Modal>
     </>
   );

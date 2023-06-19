@@ -10,6 +10,8 @@ type Supervisor @model {
   place: String!
   problem: String!
   solved: String!
+  probimage: String
+  solvedimage: String
 }
 
 type Manager @model {
@@ -19,4 +21,6 @@ type Manager @model {
   place: String!
   problem: String!
   solved: String!
+  probimage: String
+  solvedimage: String
 }

@@ -1,6 +1,9 @@
 import React, {useState} from 'react';
 import {Alert} from 'react-native';
 import styled from 'styled-components';
+import {Amplify, Storage} from 'aws-amplify';
+import awsconfig from '../aws-exports';
+Amplify.configure(awsconfig);
 // #0A7E56,#E4AE3D
 
 const Container = styled.View`
@@ -36,6 +39,8 @@ const Button = styled.Button`
   height: fit-content;
 `;
 
+const TestButton = styled.Button``;
+
 const Home = ({navigation}) => {
   const goStay = () => {
     return navigation.navigate('Stay');
@@ -45,6 +50,13 @@ const Home = ({navigation}) => {
     return navigation.navigate('Move');
   };
 
+  const result = async () => {
+    await Storage.put('text.txt', 'Hello', {
+      progressCallback(progress) {
+        console.log(`Uploaded: ${progress.loaded}/${progress.total}`);
+      },
+    });
+  };
   return (
     <Container>
       <StayContainer

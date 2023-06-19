@@ -38,24 +38,27 @@ const Text = styled.Text`
   position: absolute;
 `;
 
+const HomePage = () => {
+  return navigation.navigate('Home');
+};
+
 const StayContainer = styled.TouchableOpacity`
-  width: 100%;
+  width: 90%;
   height: 200px;
   justify-content: center;
   align-items: center;
   margin-bottom: 5%;
-  background-color: #0a7e56;
+  border: 1px solid black;
 `;
 
 const MoveContainer = styled.TouchableOpacity`
-  width: 100%;
+  width: 90%;
   height: 200px;
   justify-content: center;
   align-items: center;
   margin-bottom: 5%;
-  background-color: #e4ae3d;
+  border: 1px solid black;
 `;
-
 const Button = styled.Button`
   width: fit-content;
   height: fit-content;
@@ -118,7 +121,7 @@ const Stay = ({navigation}) => {
           }}>
           <Button
             title="Write"
-            color="white"
+            color="black"
             onPress={() => {
               goWrite();
             }}
