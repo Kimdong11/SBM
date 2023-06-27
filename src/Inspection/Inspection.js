@@ -110,6 +110,16 @@ const PlaceTouchable = styled.TouchableOpacity`
   border: 1px solid black;
   border-radius: 30px;
   padding-left: 10%;
+  margin-top: 10%;
+`;
+
+const PlaceTouchable2 = styled.TouchableOpacity`
+  width: 85%;
+  height: 30px;
+  justify-content: center;
+  border: 1px solid black;
+  border-radius: 30px;
+  padding-left: 10%;
   margin-top: 3%;
 `;
 
@@ -219,16 +229,21 @@ const ImageView = styled.ScrollView`
   padding-left: 10px;
 `;
 
+const TextContainer = styled.View`
+  justify-content: center;
+  align-items: center;
+  margin-top: 2%;
+`;
+
+const StateText = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+`;
+
 /* 여기부터 렌더링 파트*/
 
 const Inspection = ({navigation, route}) => {
   const {width} = useWindowDimensions();
-
-  const [name, setName] = useState(false);
-  const [place, setPlace] = useState(false);
-
-  const [fetchedProbImage, setFetchedProbImage] = useState([]);
-  const [fetchSolvedImage, setFetchSolvedImage] = useState([]);
 
   const [keyword, setKeyWord] = useState('');
 
@@ -258,10 +273,6 @@ const Inspection = ({navigation, route}) => {
   function setInput(key, value) {
     setFormState({...formState, [key]: value});
   }
-
-  // const nav = () => {
-  //   return navigation.navigate('Inspection');
-  // };
 
   const today = new Date();
 
@@ -307,7 +318,6 @@ const Inspection = ({navigation, route}) => {
         cameraType: 'back',
       },
       res => {
-        console.log('카메라');
         if (res.didCancel) return null;
         else {
           console.log(res);
@@ -397,9 +407,6 @@ const Inspection = ({navigation, route}) => {
     await Storage.put(uri, img, {
       level: 'public',
       contentType: img.type,
-      progressCallback(progress) {
-        console.log(`Uploaded: ${progress.loaded}/${progress.total}`);
-      },
     });
   };
 
@@ -421,9 +428,6 @@ const Inspection = ({navigation, route}) => {
     return navigation.navigate('Test');
   };
 
-  useEffect(() => {
-    console.log(route.params);
-  }, []);
   return (
     <>
       {state ? (
@@ -435,6 +439,9 @@ const Inspection = ({navigation, route}) => {
               }}>
               <FontAwesomeIcon icon={faArrowLeft} size={22} />
             </Back>
+            <TextContainer>
+              <StateText>{route.params}</StateText>
+            </TextContainer>
             <Home
               onPress={() => {
                 HomePage();
@@ -474,6 +481,9 @@ const Inspection = ({navigation, route}) => {
                 }}>
                 <FontAwesomeIcon icon={faArrowLeft} size={26} />
               </Back>
+              <TextContainer>
+                <StateText>{route.params}</StateText>
+              </TextContainer>
               <Home
                 onPress={() => {
                   HomePage();
@@ -512,12 +522,12 @@ const Inspection = ({navigation, route}) => {
                       setPlaceModalVisible(!placeModalVisivle);
                     }}></Button>
                 ) : (
-                  <PlaceTouchable
+                  <PlaceTouchable2
                     onPress={() => {
                       setPlaceModalVisible(!placeModalVisivle);
                     }}>
                     <Dates>{selectedPlace}</Dates>
-                  </PlaceTouchable>
+                  </PlaceTouchable2>
                 )}
               </MainContainer>
               <Text>문제</Text>
@@ -541,12 +551,9 @@ const Inspection = ({navigation, route}) => {
                     }}>
                     {probResponse.length === 0 ? null : (
                       <ImageView>
-                        {probResponse.assets.map(images => {
-                          const prob = probResponse.assets;
+                        {probResponse.assets.map((images, index) => {
                           return (
-                            <FileName key={images.index}>
-                              {images.fileName}
-                            </FileName>
+                            <FileName key={index}>{images.fileName}</FileName>
                           );
                         })}
                       </ImageView>
@@ -578,13 +585,9 @@ const Inspection = ({navigation, route}) => {
                     }}>
                     {solvedResponse.length === 0 ? null : (
                       <ImageView>
-                        {solvedResponse.assets.map(images => {
-                          const solved = solvedResponse.assets;
-
+                        {solvedResponse.assets.map((images, index) => {
                           return (
-                            <FileName key={images.fileName}>
-                              {images.fileName}
-                            </FileName>
+                            <FileName key={index}>{images.fileName}</FileName>
                           );
                         })}
                       </ImageView>
@@ -599,23 +602,15 @@ const Inspection = ({navigation, route}) => {
                 <Submit
                   onPress={async () => {
                     if (route.params === 'Stay') {
-                      console.log(route.params);
                       try {
-                        if (probResponse.length !== 0) {
-                          probResponse.assets.map(item => {
-                            result(item.uri, 'prob');
-                          });
-                        }
+                        if (!formState.problem || !formState.solved)
+                          return null;
 
-                        if (solvedResponse.length !== 0) {
-                          solvedResponse.assets.map(item => {
-                            result(item.uri, 'solved');
-                          });
-                        }
-
-                        if (probResponse.length !== 0) {
+                        if (
+                          probResponse.length !== 0 &&
+                          solvedResponse.length === 0
+                        ) {
                           const prob = JSON.stringify(probResponse.assets);
-
                           const todo = {
                             ...formState,
                             probimage: prob,
@@ -623,10 +618,19 @@ const Inspection = ({navigation, route}) => {
                           };
 
                           setTodos([...todos, todo]);
+
                           await API.graphql(
                             graphqlOperation(createManager, {input: todo}),
                           );
-                        } else if (solvedResponse.length !== 0) {
+
+                          probResponse.assets.map(item => {
+                            result(item.uri, 'prob');
+                          });
+                        }
+                        if (
+                          probResponse.length === 0 &&
+                          solvedResponse.length !== 0
+                        ) {
                           const solved = JSON.stringify(solvedResponse.assets);
                           const todo = {
                             ...formState,
@@ -635,10 +639,19 @@ const Inspection = ({navigation, route}) => {
                           };
 
                           setTodos([...todos, todo]);
+
                           await API.graphql(
                             graphqlOperation(createManager, {input: todo}),
                           );
-                        } else {
+
+                          solvedResponse.assets.map(item => {
+                            result(item.uri, 'solved');
+                          });
+                        }
+                        if (
+                          probResponse.length === 0 &&
+                          solvedResponse.length === 0
+                        ) {
                           const todo = {
                             ...formState,
                             probimage: '',
@@ -652,7 +665,30 @@ const Inspection = ({navigation, route}) => {
                           );
                         }
 
-                        // setFormState(initialState);
+                        if (
+                          probResponse.length !== 0 &&
+                          solvedResponse.length !== 0
+                        ) {
+                          const solved = JSON.stringify(solvedResponse.assets);
+                          const prob = JSON.stringify(probResponse.assets);
+                          const todo = {
+                            ...formState,
+                            probimage: prob,
+                            solvedimage: solved,
+                          };
+
+                          setTodos([...todos, todo]);
+
+                          await API.graphql(
+                            graphqlOperation(createManager, {input: todo}),
+                          );
+                          probResponse.assets.map(item => {
+                            result(item.uri, 'prob');
+                          });
+                          solvedResponse.assets.map(item => {
+                            result(item.uri, 'solved');
+                          });
+                        }
                         return checkContents();
                       } catch (err) {
                         console.log('error creating todo:', err);
@@ -661,21 +697,12 @@ const Inspection = ({navigation, route}) => {
                       try {
                         if (!formState.problem || !formState.solved)
                           return null;
-                        if (probResponse.length !== 0) {
-                          probResponse.assets.map(item => {
-                            result(item.uri, 'prob');
-                          });
-                        }
 
-                        if (solvedResponse.length !== 0) {
-                          solvedResponse.assets.map(item => {
-                            result(item.uri, 'solved');
-                          });
-                        }
-
-                        if (probResponse.length !== 0) {
+                        if (
+                          probResponse.length !== 0 &&
+                          solvedResponse.length === 0
+                        ) {
                           const prob = JSON.stringify(probResponse.assets);
-
                           const todo = {
                             ...formState,
                             probimage: prob,
@@ -687,7 +714,15 @@ const Inspection = ({navigation, route}) => {
                           await API.graphql(
                             graphqlOperation(createSupervisor, {input: todo}),
                           );
-                        } else if (solvedResponse.length !== 0) {
+
+                          probResponse.assets.map(item => {
+                            result(item.uri, 'prob');
+                          });
+                        }
+                        if (
+                          probResponse.length === 0 &&
+                          solvedResponse.length !== 0
+                        ) {
                           const solved = JSON.stringify(solvedResponse.assets);
                           const todo = {
                             ...formState,
@@ -700,7 +735,15 @@ const Inspection = ({navigation, route}) => {
                           await API.graphql(
                             graphqlOperation(createSupervisor, {input: todo}),
                           );
-                        } else {
+
+                          solvedResponse.assets.map(item => {
+                            result(item.uri, 'solved');
+                          });
+                        }
+                        if (
+                          probResponse.length === 0 &&
+                          solvedResponse.length === 0
+                        ) {
                           const todo = {
                             ...formState,
                             probimage: '',
@@ -712,6 +755,31 @@ const Inspection = ({navigation, route}) => {
                           await API.graphql(
                             graphqlOperation(createSupervisor, {input: todo}),
                           );
+                        }
+
+                        if (
+                          probResponse.length !== 0 &&
+                          solvedResponse.length !== 0
+                        ) {
+                          const solved = JSON.stringify(solvedResponse.assets);
+                          const prob = JSON.stringify(probResponse.assets);
+                          const todo = {
+                            ...formState,
+                            probimage: prob,
+                            solvedimage: solved,
+                          };
+
+                          setTodos([...todos, todo]);
+
+                          await API.graphql(
+                            graphqlOperation(createSupervisor, {input: todo}),
+                          );
+                          probResponse.assets.map(item => {
+                            result(item.uri, 'prob');
+                          });
+                          solvedResponse.assets.map(item => {
+                            result(item.uri, 'solved');
+                          });
                         }
 
                         // setFormState(initialState);

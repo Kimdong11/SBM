@@ -22,6 +22,17 @@ const Home = styled.Pressable`
   margin-bottom: 1%;
 `;
 
+const TextContainer = styled.View`
+  justify-content: center;
+  align-items: center;
+  margin-top: 2%;
+`;
+
+const StateText = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+`;
+
 const Line = styled.View`
   height: 1px;
   background-color: black;
@@ -37,10 +48,6 @@ const Container = styled.View`
 const Text = styled.Text`
   position: absolute;
 `;
-
-const HomePage = () => {
-  return navigation.navigate('Home');
-};
 
 const StayContainer = styled.TouchableOpacity`
   width: 90%;
@@ -85,6 +92,10 @@ const Stay = ({navigation}) => {
     }
   };
 
+  const HomePage = () => {
+    return navigation.navigate('Home');
+  };
+
   return (
     <>
       <IconContainer>
@@ -94,6 +105,9 @@ const Stay = ({navigation}) => {
           }}>
           <FontAwesomeIcon icon={faArrowLeft} size={22} />
         </Back>
+        <TextContainer>
+          <StateText>Stay</StateText>
+        </TextContainer>
         <Home
           onPress={() => {
             HomePage();
@@ -108,7 +122,7 @@ const Stay = ({navigation}) => {
             goSearch();
           }}>
           <Button
-            title="Search"
+            title="보고서 검색"
             color="black"
             onPress={() => {
               goSearch();
@@ -120,7 +134,7 @@ const Stay = ({navigation}) => {
             goWrite();
           }}>
           <Button
-            title="Write"
+            title="보고서 작성"
             color="black"
             onPress={() => {
               goWrite();

@@ -1,18 +1,29 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {API, Amplify, graphqlOperation, Auth, Storage} from 'aws-amplify';
 import {listSupervisors} from '../graphql/queries';
 import {listManagers} from '../graphql/queries';
+
 import styled from 'styled-components';
-import {Alert, Modal} from 'react-native';
+import {Alert, Keyboard, Modal, TouchableWithoutFeedback} from 'react-native';
 import DatePicker from 'react-native-date-picker';
-import {Image} from 'react-native';
+
 import AutoHeightImage from 'react-native-auto-height-image';
 import {useWindowDimensions} from 'react-native';
 
 import awsmobile from '../aws-exports';
 
+import {launchImageLibrary} from 'react-native-image-picker';
+
 import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 import {faArrowLeft, faHome} from '@fortawesome/free-solid-svg-icons';
+import {
+  deleteManager,
+  deleteSupervisor,
+  updateManager,
+  updateSupervisor,
+} from '../graphql/mutations';
+
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
 const sbmUri =
   'https://sbm99ddee2e11634e04a84bbed0bb697c34164633-sbmdev.s3.ap-northeast-2.amazonaws.com/public/';
@@ -69,11 +80,24 @@ const MainContainer = styled.View`
   margin-top: 6%;
 `;
 
+const Icons = styled.Pressable`
+  justify-content: center;
+  align-items: center;
+`;
+
 const View = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
 `;
+
+const ModalTest = styled.View`
+  flex: 1;
+`;
+
+const ModalTest2 = styled.ScrollView``;
+
+const Test = styled.View``;
 
 const ScrollView = styled.ScrollView``;
 
@@ -135,6 +159,12 @@ const DataTextContainer = styled.View`
   flex-direction: row;
   justify-content: space-evenly;
   margin-top: 20px;
+`;
+
+const UploadImage = styled.Pressable`
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: center;
 `;
 
 const DataText = styled.Text`
@@ -275,10 +305,55 @@ const ImageButton = styled.Button``;
 
 const ImageContainer = styled.View``;
 
-// const Image = styled.Image`
-//   width: 66px;
-//   height: 66px;
-// `;
+const ButtonContainer1 = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const ButtonContainer2 = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-top: 5%;
+  margin-right: 6%;
+`;
+
+const Content = styled.TextInput`
+  width: 85%;
+  height: 120px;
+  border: 1px solid black;
+  border-radius: 30px;
+  margin-top: 5%;
+  margin-bottom: 20px;
+  padding-top: 5%;
+  padding-left: 15px;
+  padding-right: 4.5%;
+`;
+
+const FileName = styled.Text`
+  font-size: 10px;
+`;
+
+const ImageView = styled.ScrollView`
+  max-width: 200px;
+  height: 20px;
+  margin-left: -30px;
+  margin-right: -30px;
+  border: 1px solid black;
+  border-radius: 10px;
+  padding-left: 10px;
+`;
+
+const TextContainer = styled.View`
+  justify-content: center;
+  align-items: center;
+  margin-top: 2%;
+`;
+
+const StateText = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+`;
 
 const Search = ({navigation, route}) => {
   const {width} = useWindowDimensions();
@@ -293,13 +368,26 @@ const Search = ({navigation, route}) => {
 
   const [probImageData, setProbImageData] = useState([]);
   const [solvedImageData, setSolvedImageData] = useState([]);
-  const [getProbImage, setGetProbImage] = useState([]);
-  const [getSolvedImage, setGetSolvedImage] = useState([]);
 
   const [placeModalVisivle, setPlaceModalVisible] = useState(false);
   const [dataModalVisible, setDataModalVisible] = useState(false);
   const [probImageModalVisible, setProbImageModalVisible] = useState(false);
   const [solvedImageModalVisible, setSolvedImageModalVisible] = useState(false);
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const [updateProbImageModalVisible, setUpdateProbImageModalVisible] =
+    useState(false);
+  const [updateSolvedImageModalVisible, setUpdateSolvedImageModalVisible] =
+    useState(false);
+
+  const [updateProb, setUpdateProb] = useState('');
+  const [updateSolved, setUpdateSolved] = useState('');
+
+  const [modalName, setModalName] = useState('');
+
+  const [type, setType] = useState('');
+
+  const [probResponse, setProbResponse] = useState('');
+  const [solvedResponse, setSolvedResponse] = useState('');
 
   const [selectedPlaces, setSelectedPlaces] = useState(null);
   const [placeDatas, setPlaceDatas] = useState([
@@ -309,6 +397,9 @@ const Search = ({navigation, route}) => {
     '모호 in 표선',
     '하버하우스웨스트',
   ]);
+
+  // const [probData, setProbData] = useState('');
+  // const [solvedData, setSolvedData] = useState('');
 
   const BackPage = () => {
     if (state === false) {
@@ -323,19 +414,14 @@ const Search = ({navigation, route}) => {
   const searchDataDatePlace = async (date, place) => {
     if (route.params === 'Stay') {
       try {
-        const todoData = await API.graphql(
+        setType('datePlace');
+        const reportData = await API.graphql(
           graphqlOperation(listManagers, {
             filter: {date: {contains: date}, and: {place: {eq: place}}},
           }),
         );
-        const datas = todoData.data.listManagers.items;
-        if (datas[0].probimage !== '') {
-          const prob = JSON.parse(datas[0].probimage);
-          setProbImageData(prob);
-        } else if (datas[0].solvedimage !== '') {
-          const solved = JSON.parse(datas[0].solvedimage);
-          setSolvedImageData(solved);
-        }
+        const datas = reportData.data.listManagers.items;
+
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -343,19 +429,14 @@ const Search = ({navigation, route}) => {
       }
     } else {
       try {
-        const todoData = await API.graphql(
+        setType('datePlace');
+        const reportData = await API.graphql(
           graphqlOperation(listSupervisors, {
             filter: {date: {contains: date}, and: {place: {eq: place}}},
           }),
         );
-        const datas = todoData.data.listSupervisors.items;
-        if (datas[0].probimage !== '') {
-          const prob = JSON.parse(datas[0].probimage);
-          setProbImageData(prob);
-        } else if (datas[0].solvedimage !== '') {
-          const solved = JSON.parse(datas[0].solvedimage);
-          setSolvedImageData(solved);
-        }
+        const datas = reportData.data.listSupervisors.items;
+
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -366,15 +447,15 @@ const Search = ({navigation, route}) => {
 
   const searchDataDate = async date => {
     if (route.params === 'Stay') {
+      setType('date');
       try {
-        const todoData = await API.graphql(
+        const reportData = await API.graphql(
           graphqlOperation(listManagers, {
             filter: {date: {contains: date}},
           }),
         );
-        const datas = todoData.data.listManagers.items;
-        const prob = JSON.parse(datas[0].probimage);
-        const solved = JSON.parse(datas[0].solvedimage);
+        const datas = reportData.data.listManagers.items;
+
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -382,19 +463,14 @@ const Search = ({navigation, route}) => {
       }
     } else {
       try {
-        const todoData = await API.graphql(
+        setType('date');
+        const reportData = await API.graphql(
           graphqlOperation(listSupervisors, {
             filter: {date: {contains: date}},
           }),
         );
-        const datas = todoData.data.listSupervisors.items;
-        if (datas[0].probimage !== '') {
-          const prob = JSON.parse(datas[0].probimage);
-          setProbImageData(prob);
-        } else if (datas[0].solvedimage !== '') {
-          const solved = JSON.parse(datas[0].solvedimage);
-          setSolvedImageData(solved);
-        }
+        const datas = reportData.data.listSupervisors.items;
+
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -406,19 +482,14 @@ const Search = ({navigation, route}) => {
   const searchDataPlace = async place => {
     if (route.params === 'Stay') {
       try {
-        const todoData = await API.graphql(
+        setType('place');
+        const reportData = await API.graphql(
           graphqlOperation(listManagers, {
             filter: {place: {eq: place}},
           }),
         );
-        const datas = todoData.data.listManagers.items;
-        if (datas[0].probimage !== '') {
-          const prob = JSON.parse(datas[0].probimage);
-          setProbImageData(prob);
-        } else if (datas[0].solvedimage !== '') {
-          const solved = JSON.parse(datas[0].solvedimage);
-          setSolvedImageData(solved);
-        }
+        const datas = reportData.data.listManagers.items;
+
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
       } catch (err) {
@@ -426,19 +497,13 @@ const Search = ({navigation, route}) => {
       }
     } else {
       try {
-        const todoData = await API.graphql(
+        setType('place');
+        const reportData = await API.graphql(
           graphqlOperation(listSupervisors, {
             filter: {place: {eq: place}},
           }),
         );
-        const datas = todoData.data.listSupervisors.items;
-        if (datas[0].probimage !== '') {
-          const prob = JSON.parse(datas[0].probimage);
-          setProbImageData(prob);
-        } else if (datas[0].solvedimage !== '') {
-          const solved = JSON.parse(datas[0].solvedimage);
-          setSolvedImageData(solved);
-        }
+        const datas = reportData.data.listSupervisors.items;
 
         if (datas.length === 0) return Alert.alert('검색 결과가 없습니다!');
         setDatas(datas);
@@ -446,6 +511,221 @@ const Search = ({navigation, route}) => {
         console.log(err);
       }
     }
+  };
+
+  const clickedDeleteButton = async () => {
+    if (route.params === 'Stay') {
+      if (selectedData.probimage !== '' && selectedData.solvedimage === '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+      }
+      if (selectedData.probimage === '' && selectedData.solvedimage !== '') {
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+      }
+      if (selectedData.probimage !== '' && selectedData.solvedimage !== '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+      }
+
+      await API.graphql(
+        graphqlOperation(deleteManager, {input: {id: selectedData.id}}),
+      );
+      setDataModalVisible(!dataModalVisible);
+      BackPage();
+    } else {
+      if (selectedData.probimage !== '' && selectedData.solvedimage === '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+      }
+      if (selectedData.probimage === '' && selectedData.solvedimage !== '') {
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+      }
+      if (selectedData.probimage !== '' && selectedData.solvedimage !== '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+      }
+    }
+
+    await API.graphql(
+      graphqlOperation(deleteSupervisor, {input: {id: selectedData.id}}),
+    );
+    setDataModalVisible(!dataModalVisible);
+    BackPage();
+  };
+
+  const makeProbUri = () => {
+    if (probResponse !== '') {
+      const prob = probResponse.assets.map(image => {
+        return image;
+      });
+
+      return JSON.stringify(prob);
+    } else {
+      return selectedData.probimage;
+    }
+  };
+
+  const makeSolvedUri = () => {
+    if (solvedResponse !== '') {
+      const solved = solvedResponse.assets.map(image => {
+        return image;
+      });
+
+      return JSON.stringify(solved);
+    } else {
+      return selectedData.solvedimage;
+    }
+  };
+
+  const fetchResourceFromURI = async (uri, state) => {
+    if (state === 'prob') {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return blob;
+    } else {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return blob;
+    }
+  };
+
+  const result = async (uri, state) => {
+    const img = await fetchResourceFromURI(uri, state);
+
+    await Storage.put(uri, img, {
+      level: 'public',
+      contentType: img.type,
+    });
+  };
+
+  const clickedUpdateButton = async () => {
+    if (route.params === 'Stay') {
+      if (probResponse !== '' && solvedResponse === '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+
+        probResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+      }
+      if (probResponse === '' && solvedResponse !== '') {
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+
+        solvedResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+      }
+      if (probResponse !== '' && solvedResponse !== '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+
+        probResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+        solvedResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+      }
+
+      await API.graphql(
+        graphqlOperation(updateManager, {
+          input: {
+            id: selectedData.id,
+            place: selectedPlaces,
+            problem: updateProb !== '' ? updateProb : selectedData.problem,
+            solved: updateSolved !== '' ? updateSolved : selectedData.solved,
+            probimage: makeProbUri(),
+            solvedimage: makeSolvedUri(),
+          },
+        }),
+      );
+      BackPage();
+    } else {
+      if (probResponse !== '' && solvedResponse === '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+
+        probResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+      }
+      if (probResponse === '' && solvedResponse !== '') {
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+
+        solvedResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+      }
+      if (probResponse !== '' && solvedResponse !== '') {
+        const prob = JSON.parse(selectedData.probimage);
+        prob.map(async image => {
+          await Storage.remove(image.uri);
+        });
+        const solved = JSON.parse(selectedData.solvedimage);
+        solved.map(async image => {
+          await Storage.remove(image.uri);
+        });
+
+        probResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+        solvedResponse.assets.map(async image => {
+          return result(image.uri);
+        });
+      }
+      await API.graphql(
+        graphqlOperation(updateSupervisor, {
+          input: {
+            id: selectedData.id,
+            place: selectedPlaces,
+            problem: updateProb !== '' ? updateProb : selectedData.problem,
+            solved: updateSolved !== '' ? updateSolved : selectedData.solved,
+            probimage: makeProbUri(),
+            solvedimage: makeSolvedUri(),
+          },
+        }),
+      );
+    }
+
+    BackPage();
   };
 
   const HomePage = () => {
@@ -456,6 +736,7 @@ const Search = ({navigation, route}) => {
     setSelectedPlaces(current => {
       return (current = a);
     });
+
     return closeButton2();
   };
 
@@ -464,7 +745,27 @@ const Search = ({navigation, route}) => {
   };
 
   const closeButton2 = () => {
+    if (modalName === 'update') {
+      setPlaceModalVisible(!placeModalVisivle);
+      setUpdateModalVisible(!updateModalVisible);
+
+      return setModalName('');
+    }
     return setPlaceModalVisible(!placeModalVisivle);
+  };
+
+  const closeButton3 = () => {
+    return setUpdateModalVisible(!updateModalVisible);
+  };
+
+  const closeButton4 = state => {
+    setUpdateProbImageModalVisible(!updateProbImageModalVisible);
+    return setUpdateModalVisible(!updateModalVisible);
+  };
+
+  const closeButton5 = state => {
+    setUpdateSolvedImageModalVisible(!updateSolvedImageModalVisible);
+    setUpdateModalVisible(!updateModalVisible);
   };
 
   // const getImage = async () => {
@@ -473,7 +774,37 @@ const Search = ({navigation, route}) => {
   //     return setGetProbImage([...getProbImage, image]);
   //   });
   //   console.log(probImageData[0].uri);
+
   // };
+
+  const onProbSelectImage = () => {
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        includeBase64: Platform.OS === 'android',
+        selectionLimit: 0,
+      },
+      res => {
+        if (res.didCancel) return null;
+        setProbResponse(res);
+      },
+    );
+  };
+
+  const onSolvedSelectImage = () => {
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        includeBase64: Platform.OS === 'android',
+        selectionLimit: 0,
+      },
+      res => {
+        if (res.didCancel) return null;
+
+        setSolvedResponse(res);
+      },
+    );
+  };
 
   return (
     <>
@@ -484,6 +815,9 @@ const Search = ({navigation, route}) => {
           }}>
           <FontAwesomeIcon icon={faArrowLeft} size={22} />
         </Back>
+        <TextContainer>
+          <StateText>{route.params}</StateText>
+        </TextContainer>
         <Home
           onPress={() => {
             HomePage();
@@ -505,8 +839,7 @@ const Search = ({navigation, route}) => {
               </ButtonContainer>
             ) : (
               <PlaceTouchableContainer>
-                <PlaceTouchable
-                  onPress={() => setPlaceModalVisible(!placeModalVisivle)}>
+                <PlaceTouchable onPress={() => closeButton2()}>
                   <Dates>{selectedPlaces}</Dates>
                 </PlaceTouchable>
               </PlaceTouchableContainer>
@@ -525,7 +858,7 @@ const Search = ({navigation, route}) => {
                   onPress={() => {
                     setOpen(!open);
                   }}>
-                  <Dates>{selectedDate}</Dates>
+                  <Dates>{`${date.getFullYear()}-${selectedDate}`}</Dates>
                 </PlaceTouchable>
               </PlaceTouchableContainer>
             )}
@@ -581,7 +914,8 @@ const Search = ({navigation, route}) => {
         presentationStyle="formSheet"
         onRequestClose={() => {
           //   Alert.alert('Modal has been closed.');
-          setPlaceModalVisible(!placeModalVisivle);
+          setSelectedPlaces(null);
+          closeButton2();
         }}>
         <PlaceModal>
           <PlaceMainContainer>
@@ -617,6 +951,7 @@ const Search = ({navigation, route}) => {
           setSelectedDate(dates);
         }}
         onCancel={() => {
+          setSelectedDate(null);
           setOpen(false);
         }}
       />
@@ -632,7 +967,18 @@ const Search = ({navigation, route}) => {
         {selectedData === null ? null : (
           <ModalMainContainer>
             <ModalDataContainer>
-              <NameTitle>이름</NameTitle>
+              <ButtonContainer1>
+                <NameTitle>이름</NameTitle>
+                <ButtonContainer2>
+                  <Button
+                    title="수정"
+                    onPress={() => {
+                      closeButton();
+                      return setUpdateModalVisible(!updateModalVisible);
+                    }}></Button>
+                  <Button title="삭제" onPress={clickedDeleteButton}></Button>
+                </ButtonContainer2>
+              </ButtonContainer1>
               <ContentsContainer>
                 <NameContainer>
                   <Name>{selectedData.name}</Name>
@@ -660,6 +1006,10 @@ const Search = ({navigation, route}) => {
                     title="문제 이미지 보기"
                     color="green"
                     onPress={() => {
+                      if (selectedData.probimage !== '') {
+                        const prob = JSON.parse(selectedData.probimage);
+                        setProbImageData(prob);
+                      }
                       setDataModalVisible(!dataModalVisible);
                       setProbImageModalVisible(!probImageModalVisible);
                     }}></ImageButton>
@@ -675,13 +1025,16 @@ const Search = ({navigation, route}) => {
                     title="해결 이미지 보기"
                     color="green"
                     onPress={() => {
+                      if (selectedData.solvedimage !== '') {
+                        const solved = JSON.parse(selectedData.solvedimage);
+                        setSolvedImageData(solved);
+                      }
                       setDataModalVisible(!dataModalVisible);
                       setSolvedImageModalVisible(!solvedImageModalVisible);
                     }}></ImageButton>
                 </ImageButtonContainer>
               </ContentsContainer>
             </ModalDataContainer>
-            <CloseButtonContainer></CloseButtonContainer>
           </ModalMainContainer>
         )}
       </Modal>
@@ -717,6 +1070,8 @@ const Search = ({navigation, route}) => {
         presentationStyle="pageSheet"
         onRequestClose={() => {
           //   Alert.alert('Modal has been closed.');
+          setProbImageData([]);
+          setSolvedImageData([]);
           setDataModalVisible(!dataModalVisible);
           setSolvedImageModalVisible(!solvedImageModalVisible);
         }}>
@@ -734,6 +1089,190 @@ const Search = ({navigation, route}) => {
             })}
           </ImageViewContainer>
         </ImageModalContainer>
+      </Modal>
+      <Modal
+        animationType="slide"
+        //transparent={true}
+        visible={updateModalVisible}
+        presentationStyle="formSheet"
+        onRequestClose={() => {
+          //   Alert.alert('Modal has been closed.');
+          setProbResponse('');
+          setSolvedResponse('');
+          closeButton3();
+          setDataModalVisible(!dataModalVisible);
+        }}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAwareScrollView>
+            {selectedData === null ? null : (
+              <ModalMainContainer>
+                <ModalDataContainer>
+                  <ButtonContainer1>
+                    <NameTitle>이름</NameTitle>
+                    <ButtonContainer2>
+                      <Button
+                        title="수정 완료"
+                        onPress={async () => {
+                          clickedUpdateButton();
+                        }}></Button>
+                    </ButtonContainer2>
+                  </ButtonContainer1>
+                  <ContentsContainer>
+                    <NameContainer>
+                      <Name>{selectedData.name}</Name>
+                    </NameContainer>
+                  </ContentsContainer>
+                  <DateTitle>날짜</DateTitle>
+                  <ContentsContainer>
+                    <DateContainer>
+                      <DateText>{selectedData.date}</DateText>
+                    </DateContainer>
+                  </ContentsContainer>
+                  <PlaceTitle>장소</PlaceTitle>
+                  <ContentsContainer>
+                    <PlaceTouchable
+                      onPress={() => {
+                        setModalName('update');
+                        setPlaceModalVisible(!placeModalVisivle);
+                        setUpdateModalVisible(!updateModalVisible);
+                      }}>
+                      <Place>{selectedPlaces}</Place>
+                    </PlaceTouchable>
+                  </ContentsContainer>
+                  <ProblemTitle>문제</ProblemTitle>
+                  <ContentsContainer>
+                    <Content
+                      multiline={true}
+                      onChangeText={value => {
+                        setUpdateProb(current => {
+                          return (current = value);
+                        });
+                      }}>
+                      {selectedData.problem}
+                    </Content>
+
+                    {probResponse !== '' ? (
+                      <UploadImage
+                        onPress={() => {
+                          setUpdateProbImageModalVisible(
+                            !updateProbImageModalVisible,
+                          );
+                          setUpdateModalVisible(!updateModalVisible);
+                        }}>
+                        <ImageView>
+                          {probResponse.assets.map(images => {
+                            return (
+                              <FileName key={images.fileName}>
+                                {images.fileName}
+                              </FileName>
+                            );
+                          })}
+                        </ImageView>
+                      </UploadImage>
+                    ) : (
+                      <ImageButtonContainer>
+                        <ImageButton
+                          title="문제 이미지 선택"
+                          color="green"
+                          onPress={() => {
+                            onProbSelectImage();
+                          }}></ImageButton>
+                      </ImageButtonContainer>
+                    )}
+                  </ContentsContainer>
+                  <SolvedTitle>해결</SolvedTitle>
+                  <ContentsContainer>
+                    <Content
+                      multiline={true}
+                      onChangeText={value => {
+                        setUpdateSolved(current => {
+                          return (current = value);
+                        });
+                      }}>
+                      {selectedData.solved}
+                    </Content>
+                    {solvedResponse !== '' ? (
+                      <UploadImage
+                        onPress={() => {
+                          setUpdateSolvedImageModalVisible(
+                            !updateSolvedImageModalVisible,
+                          );
+                          setUpdateModalVisible(!updateModalVisible);
+                        }}>
+                        <ImageView>
+                          {probResponse.assets.map(images => {
+                            return (
+                              <FileName key={images.fileName}>
+                                {images.fileName}
+                              </FileName>
+                            );
+                          })}
+                        </ImageView>
+                      </UploadImage>
+                    ) : (
+                      <ImageButtonContainer>
+                        <ImageButton
+                          title="해결 이미지 선택"
+                          color="green"
+                          onPress={() => {
+                            onSolvedSelectImage();
+                          }}></ImageButton>
+                      </ImageButtonContainer>
+                    )}
+                  </ContentsContainer>
+                </ModalDataContainer>
+              </ModalMainContainer>
+            )}
+          </KeyboardAwareScrollView>
+        </TouchableWithoutFeedback>
+      </Modal>
+      <Modal
+        animationType="slide"
+        visible={updateProbImageModalVisible}
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          closeButton4();
+        }}>
+        <ModalTest>
+          <ModalTest2>
+            {probResponse === ''
+              ? null
+              : probResponse.assets.map(images => {
+                  return (
+                    <Test key={images.fileName}>
+                      <AutoHeightImage
+                        width={width}
+                        source={{uri: images.uri}}
+                      />
+                    </Test>
+                  );
+                })}
+          </ModalTest2>
+        </ModalTest>
+      </Modal>
+      <Modal
+        animationType="slide"
+        visible={updateSolvedImageModalVisible}
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          closeButton5();
+        }}>
+        <ModalTest>
+          <ModalTest2>
+            {solvedResponse === ''
+              ? null
+              : solvedResponse.assets.map(images => {
+                  return (
+                    <Test key={images.fileName}>
+                      <AutoHeightImage
+                        width={width}
+                        source={{uri: images.uri}}
+                      />
+                    </Test>
+                  );
+                })}
+          </ModalTest2>
+        </ModalTest>
       </Modal>
     </>
   );

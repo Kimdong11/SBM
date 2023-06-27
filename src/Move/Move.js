@@ -60,9 +60,17 @@ const Line = styled.View`
   background-color: black;
   opacity: 50;
 `;
-const HomePage = () => {
-  return navigation.navigate('Home');
-};
+
+const TextContainer = styled.View`
+  justify-content: center;
+  align-items: center;
+  margin-top: 2%;
+`;
+
+const StateText = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+`;
 
 const Move = ({navigation}) => {
   const [state, setState] = useState(true);
@@ -85,6 +93,10 @@ const Move = ({navigation}) => {
     }
   };
 
+  const HomePage = () => {
+    return navigation.navigate('Home');
+  };
+
   return (
     <>
       <IconContainer>
@@ -94,6 +106,9 @@ const Move = ({navigation}) => {
           }}>
           <FontAwesomeIcon icon={faArrowLeft} size={22} />
         </Back>
+        <TextContainer>
+          <StateText>Move</StateText>
+        </TextContainer>
         <Home
           onPress={() => {
             HomePage();
